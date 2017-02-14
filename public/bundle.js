@@ -64,147 +64,90 @@
 	var d3 = __webpack_require__(12);
 	
 	
-	var url = 'https://raw.githubusercontent.com/FreeCodeCamp/ProjectReferenceData/master/global-temperature.json';
+	var url = 'https://raw.githubusercontent.com/DealPete/forceDirected/master/countries.json';
+	
+	var svgWidth = 900;
+	var svgHeight = 500;
+	
+	var margin = { top: 20, right: 20, bottom: 20, left: 20 },
+	    width = svgWidth - margin.left - margin.right,
+	    height = svgHeight - margin.top - margin.bottom;
+	
+	//canvas is the base on which svg(lines) and div(nodes) are placed
+	var canvas = d3.select('#app').append('div').attr('id', 'canvas');
+	
+	//svg
+	var svg = canvas.append("svg").attr("id", "svg").attr("width", svgWidth).attr("height", svgHeight);
+	
 	var tooltip = d3.select("body").append("div").attr("class", "tooltip").style("position", "absolute").style("z-index", "10").style("visibility", "hidden").text("no data");
+	
+	//page title
+	svg.append('text').attr("position", "center").attr("y", "30").attr("x", "10").attr('id', 'title').text('Force-Directed Graph of National Contiguity');
 	
 	d3.json(url, function (jsonData) {
 	
-	    var data = jsonData;
-	    var baseTemp = data.baseTemperature;
-	    var monthlyVariance = data.monthlyVariance.slice();
+	    var nodes = jsonData.nodes;
+	    var links = jsonData.links;
 	
-	    var maxTemp = d3.max(monthlyVariance, function (d) {
-	        return d.variance;
-	    });
-	    var minTemp = d3.min(monthlyVariance, function (d) {
-	        return d.variance;
-	    });
+	    //link is an svg that will hold all of the lines
+	    //lines are svg elements
+	    var link = svg.append("g").attr("class", "links").selectAll("line").data(links).enter().append("line").attr("stroke", "#4D4D4D").attr("stroke-width", "1");
 	
-	    var keyArray = [];
-	    for (var i = Math.floor(minTemp); i < Math.ceil(maxTemp + 1); i++) {
-	        keyArray.push(i);
-	    };
-	
-	    console.log("keyArray: " + keyArray);
-	    console.log("maxTemp: " + maxTemp);
-	    console.log("minTemp: " + minTemp);
-	    console.log("data" + data);
-	    console.log("baseTemp" + baseTemp);
-	    console.log("monthlyVariance[1]" + monthlyVariance[1].month);
-	
-	    // set the dimensions of the canvas
-	    var margin = { top: 80, right: 40, bottom: 50, left: 70 },
-	        width = 860 - margin.left - margin.right,
-	        height = 480 - margin.top - margin.bottom;
-	
-	    // set the ranges
-	    var x = d3.scaleLinear().range([0, width]);
-	    var x2 = d3.scaleLinear().range([0, 10 * keyArray.length]);
-	    var y = d3.scaleLinear().range([height, 0]);
-	
-	    var formatMonth = d3.timeFormat("%B");
-	    var monthFormatter = function monthFormatter(monthNumber) {
-	        var date = new Date(1111, monthNumber - 1, 1);
-	        return formatMonth(date);
-	    };
-	
-	    // define the x axis
-	    var xAxis = d3.axisBottom().scale(x).tickSize(4).tickFormat(d3.format("d"));
-	
-	    var xAxis2 = d3.axisBottom().scale(x2).tickSize(0);
-	
-	    // define the y axis
-	    var yAxis = d3.axisLeft().scale(y).tickSize(0).tickFormat(monthFormatter);
-	
-	    // add the SVG element
-	    var svg = d3.select("body").append("svg").attr("id", "svg").attr("width", width + margin.left + margin.right).attr("height", height + margin.top + margin.bottom).append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-	
-	    // scale the range of the data
-	    x.domain([d3.min(monthlyVariance, function (d) {
-	        return d.year;
-	    }), d3.max(monthlyVariance, function (d) {
-	        return d.year;
-	    })]);
-	    x2.domain(d3.extent(keyArray));
-	    y.domain([d3.max(monthlyVariance, function (d) {
-	        return d.month;
-	    }), d3.min(monthlyVariance, function (d) {
-	        return d.month;
-	    })]);
-	
-	    //title
-	    svg.append("text").attr("x", width / 2).attr("y", 0 - margin.top / 1.3).attr("text-anchor", "middle").style("font-size", "1.0em").style("text-decoration", "none").text("Monthly Global Land-Surface Temperature");
-	
-	    //subtitle
-	    svg.append("text").attr("x", width / 2).attr("y", 0 - margin.top / 1.7).attr("text-anchor", "middle").style("font-size", ".7em").style("text-decoration", "none").html("1753-2015");
-	
-	    var axisTitles = "0.9em";
-	    //yAxis title
-	    svg.append("text").attr("x", -100).attr("y", -40).attr("text-anchor", "end").attr("transform", "rotate(-90)").style("font-size", axisTitles).style("text-decoration", "none").html("Month");
-	
-	    //xAxis title
-	    svg.append("text").attr("x", width / 2).attr("y", height + 30).attr("text-anchor", "middle").style("font-size", axisTitles).style("text-decoration", "none").html("Year");
-	
-	    // add x axis
-	    svg.append("g").attr("class", "xAxis").style("font-size", "0.5em").call(xAxis).attr("transform", "translate(0," + (height + 2) + ")").selectAll("text").style("text-anchor", "end").attr("dx", "1em").attr("dy", "0.5em");
-	
-	    // add y axis
-	    svg.append("g").attr("class", "yAxis").style("font-size", "0.5em").call(yAxis).attr("transform", "translate(0,-20)").append("text");
-	
-	    var node = svg.selectAll(".bar").data(monthlyVariance).enter().append("g").attr("class", "node");
-	
-	    node.append("rect").attr("class", "bar").attr("x", function (d) {
-	        return x(d.year);
-	    }).attr("width", Math.ceil(width / monthlyVariance.length / 12) + 0.5).attr("y", function (d) {
-	        return y(d.month) - 30;
-	    }).attr("height", height / 12 + 2).style("fill", function (d) {
-	        var red = 0;
-	        var blue = 0;
-	        var green = 200;
-	        var opacity = 1;
-	        if (d.variance >= 0) {
-	            red = Math.ceil(d.variance * 255 / (maxTemp + 0.01));
-	            green -= red;
-	        } else {
-	            blue = Math.ceil(d.variance * 255 / (minTemp + 0.01));
-	            green -= blue;
-	        }
-	
-	        return "rgb(" + (255 - blue) + ", " + green + "," + (255 - red) + ")";
+	    //create nodes for flags
+	    //creating each node as a div to which an image can be placed
+	    //due to issues when placing images directly on the svg element
+	    var node = canvas.append("div").attr("id", "flags").selectAll('img').data(nodes).enter().append('img').attr("class", function (d) {
+	        return 'absolute flag flag-' + d.code;
 	    }).on("mouseover", function (d) {
-	        d3.select(this).attr("class", "barSelected");
-	        tooltip.style("visibility", "visible").style("font-size", "0.6em").style("top", d3.event.pageY + 10 + "px").style("left", d3.event.pageX + "px").html("" + monthFormatter(d.month) + " " + d.year + "<br/>" + "Average Temp: " + +(baseTemp + d.variance).toFixed(2) + "&degC<br/>" + "Variance: " + +d.variance.toFixed(2) + "&degC<br/>");
+	        d3.select(this);
+	        tooltip.style("visibility", "visible").style("font-size", "0.6em").style("top", d3.event.pageY + 10 + "px").style("left", d3.event.pageX + "px").html(d.country);
 	    }).on("mousemove", function () {
 	        return tooltip.style("top", event.pageY - 10 + "px").style("left", event.pageX + 10 + "px");
 	    }).on("mouseout", function () {
 	        d3.select(this);
 	        tooltip.style("visibility", "hidden");
-	    });
+	    }).call(d3.drag().on("start", dragStart).on("drag", dragging).on("end", dragEnd));
 	
-	    svg.selectAll("key").data(keyArray).enter().append("rect").attr("class", "key").attr("x", function (d) {
-	        return d * 11 + 180;
-	    }).attr("width", 11).attr("y", height + 19).attr("height", 10).style("fill", function (d) {
-	        var red = 0;
-	        var blue = 0;
-	        var green = 200;
-	        var opacity = 1;
-	        if (d >= 0) {
-	            red = Math.ceil(d * 255 / (maxTemp + 0.01));
-	            green -= red;
-	        } else {
-	            blue = Math.ceil(d * 255 / (minTemp + 0.01));
-	            green -= blue;
-	        }
-	        return "rgb(" + (255 - blue) + ", " + green + "," + (255 - red) + ")";
-	    });
+	    //create a simulation
+	    var simulation = d3.forceSimulation(nodes).force("link", d3.forceLink(links).strength(2)).force("charge", d3.forceManyBody().strength(-30).distanceMin(20).distanceMax(50)).force("center", d3.forceCenter(svgWidth / 3, svgHeight / 2)) //divide by three to offset flattening in ticked()
+	    .force('separate', d3.forceCollide(12)).on("tick", ticked);
 	
-	    //key description
-	    var keyOffsetX = 50;
-	    var keyLineSpacing = 8;
-	    svg.append("text").attr("x", keyOffsetX).attr("y", height + 24).attr("text-anchor", "middle").style("font-size", "0.5em").style("text-decoration", "none").html("Temperature variance").append("tspan").attr("x", keyOffsetX).attr("dy", keyLineSpacing).html("from base temp of " + baseTemp + "").append("tspan").attr("x", keyOffsetX).attr("dy", keyLineSpacing).html("degrees Celcius.");
+	    function ticked() {
+	        link
+	        //multiply by 1.5 to stretch the graph horizontally
+	        .attr("x1", function (d) {
+	            return d.source.x * 1.5;
+	        }).attr("y1", function (d) {
+	            return d.source.y;
+	        }).attr("x2", function (d) {
+	            return d.target.x * 1.5;
+	        }).attr("y2", function (d) {
+	            return d.target.y;
+	        });
 	
-	    //key axis
-	    svg.append("g").attr("class", "xAxis").style("font-size", "0.5em").call(xAxis2).attr("transform", "translate(107," + (height + 29) + ")").selectAll("text").style("text-anchor", "end").attr("dy", ".8em").attr("dx", ".5em");
+	        node.style("top", function (d) {
+	            return d.y - (svgHeight + 5) + 'px';
+	        }).style("left", function (d) {
+	            return d.x * 1.5 + 'px';
+	        });
+	    }
+	
+	    function dragStart(d) {
+	        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+	        d.fx = d.x;
+	        d.fy = d.y;
+	    }
+	
+	    function dragging(d) {
+	        d.fx = d3.event.x;
+	        d.fy = d3.event.y;
+	    }
+	
+	    function dragEnd(d) {
+	        if (!d3.event.active) simulation.alphaTarget(0);
+	        d.fx = null;
+	        d.fy = null;
+	    }
 	});
 
 /***/ },
@@ -17349,7 +17292,7 @@
 	
 	
 	// module
-	exports.push([module.id, "@font-face {\n  font-family: 'Actor';\n  font-style: normal;\n  font-weight: 400;\n  src: url(" + __webpack_require__(7) + ");\n  src: url(" + __webpack_require__(8) + ") format(\"woff2\");\n  src: url(" + __webpack_require__(9) + ") format(\"woff\");\n  src: url(" + __webpack_require__(10) + "#Actor) format(\"svg\"); }\n\n#svg {\n  font-family: \"Actor\", Helvetica, Arial, serif;\n  position: relative;\n  background-color: rgba(200, 200, 200, 0.9);\n  color: rgba(200, 200, 200, 0.9);\n  padding: 1vh;\n  top: auto;\n  bottom: auto;\n  border: solid 1px black;\n  -webkit-border-radius: 3px;\n  -moz-border-radius: 3px;\n  -ms-border-radius: 3px;\n  border-radius: 3px; }\n\nbody {\n  font-family: \"Actor\", Helvetica, Arial, serif;\n  background-color: rgba(20, 20, 20, 0.98);\n  background-repeat: no-repeat;\n  background-position: center;\n  display: flex;\n  justify-content: center;\n  align-items: center; }\n\n.bar .bar:hover {\n  fill: #a50001; }\n\n.container {\n  display: flex;\n  align-content: center; }\n\n.barSelected {\n  border: solid 1px black;\n  fill: #00ff05; }\n  .barSelected .bar:hover {\n    fill: #a50001; }\n\n.axis {\n  font: 10px sans-serif; }\n\n.axis path,\n.axis line {\n  fill: none;\n  stroke: white;\n  shape-rendering: crispEdges; }\n\n.tooltip {\n  font-size: 0.6em;\n  padding: 1em;\n  color: rgba(200, 200, 200, 0.9);\n  background-color: rgba(20, 20, 20, 0.98);\n  border: solid 1px #29000b;\n  width: 12em;\n  -webkit-border-radius: 3px;\n  -moz-border-radius: 3px;\n  -ms-border-radius: 3px;\n  border-radius: 3px; }\n", ""]);
+	exports.push([module.id, "/*!\n * Generated with CSS Flag Sprite generator (https://www.flag-sprites.com/)\n */\n.flag {\n  display: inline-block;\n  width: 18px;\n  height: 12px;\n  background: url(\"http://res.cloudinary.com/dtau8d3ak/image/upload/v1486990736/flags_c638fe.png\") no-repeat; }\n\n.flag.flag-dk {\n  background-position: -54px -36px; }\n\n.flag.flag-bb {\n  background-position: 0 -12px; }\n\n.flag.flag-sy {\n  background-position: -144px -144px; }\n\n.flag.flag-tr {\n  background-position: -90px -156px; }\n\n.flag.flag-ga {\n  background-position: -90px -48px; }\n\n.flag.flag-va {\n  background-position: 0 -168px; }\n\n.flag.flag-sa {\n  background-position: -144px -132px; }\n\n.flag.flag-cu {\n  background-position: -234px -24px; }\n\n.flag.flag-ao {\n  background-position: -144px 0; }\n\n.flag.flag-cm {\n  background-position: -162px -24px; }\n\n.flag.flag-bn {\n  background-position: -144px -12px; }\n\n.flag.flag-ml {\n  background-position: -144px -96px; }\n\n.flag.flag-lc {\n  background-position: -144px -84px; }\n\n.flag.flag-re {\n  background-position: -54px -132px; }\n\n.flag.flag-mu {\n  background-position: -18px -108px; }\n\n.flag.flag-mv {\n  background-position: -36px -108px; }\n\n.flag.flag-bt {\n  background-position: -216px -12px; }\n\n.flag.flag-as {\n  background-position: -180px 0; }\n\n.flag.flag-am {\n  background-position: -108px 0; }\n\n.flag.flag-jm {\n  background-position: -144px -72px; }\n\n.flag.flag-za {\n  background-position: -198px -168px; }\n\n.flag.flag-pa {\n  background-position: -72px -120px; }\n\n.flag.flag-is {\n  background-position: -90px -72px; }\n\n.flag.flag-mg {\n  background-position: -90px -96px; }\n\n.flag.flag-mc {\n  background-position: -36px -96px; }\n\n.flag.flag-na {\n  background-position: -126px -108px; }\n\n.flag.flag-cn {\n  background-position: -180px -24px; }\n\n.flag.flag-md {\n  background-position: -54px -96px; }\n\n.flag.flag-to {\n  background-position: -72px -156px; }\n\n.flag.flag-je {\n  background-position: -126px -72px; }\n\n.flag.flag-my {\n  background-position: -90px -108px; }\n\n.flag.flag-cy {\n  background-position: -270px -24px; }\n\n.flag.flag-ca {\n  background-position: -18px -24px; }\n\n.flag.flag-an {\n  background-position: -126px 0; }\n\n.flag.flag-mm {\n  background-position: -162px -96px; }\n\n.flag.flag-bw {\n  background-position: -252px -12px; }\n\n.flag.flag-dj {\n  background-position: -36px -36px; }\n\n.flag.flag-ng {\n  background-position: -198px -108px; }\n\n.flag.flag-sb {\n  background-position: -162px -132px; }\n\n.flag.flag-ro {\n  background-position: -72px -132px; }\n\n.flag.flag-gd {\n  background-position: -126px -48px; }\n\n.flag.flag-al {\n  background-position: -90px 0; }\n\n.flag.flag-mr {\n  background-position: -252px -96px; }\n\n.flag.flag-si {\n  background-position: -270px -132px; }\n\n.flag.flag-iq {\n  background-position: -54px -72px; }\n\n.flag.flag-ba {\n  background-position: -270px 0; }\n\n.flag.flag-cr {\n  background-position: -216px -24px; }\n\n.flag.flag-cz {\n  background-position: 0 -36px; }\n\n.flag.flag-tn {\n  background-position: -54px -156px; }\n\n.flag.flag-fj {\n  background-position: 0 -48px; }\n\n.flag.flag-it {\n  background-position: -108px -72px; }\n\n.flag.flag-um {\n  background-position: -216px -156px; }\n\n.flag.flag-bm {\n  background-position: -126px -12px; }\n\n.flag.flag-no {\n  background-position: -252px -108px; }\n\n.flag.flag-tl {\n  background-position: -18px -156px; }\n\n.flag.flag-ag {\n  background-position: -54px 0; }\n\n.flag.flag-tt {\n  background-position: -108px -156px; }\n\n.flag.flag-kn {\n  background-position: 0 -84px; }\n\n.flag.flag-sk {\n  background-position: 0 -144px; }\n\n.flag.flag-gp {\n  background-position: 0 -60px; }\n\n.flag.flag-nl {\n  background-position: -234px -108px; }\n\n.flag.flag-ec {\n  background-position: -126px -36px; }\n\n.flag.flag-tw {\n  background-position: -144px -156px; }\n\n.flag.flag-lr {\n  background-position: -198px -84px; }\n\n.flag.flag-mk {\n  background-position: -126px -96px; }\n\n.flag.flag-fr {\n  background-position: -72px -48px; }\n\n.flag.flag-az {\n  background-position: -252px 0; }\n\n.flag.flag-cd {\n  background-position: -36px -24px; }\n\n.flag.flag-ht {\n  background-position: -216px -60px; }\n\n.flag.flag-au {\n  background-position: -216px 0; }\n\n.flag.flag-pe {\n  background-position: -90px -120px; }\n\n.flag.flag-in {\n  background-position: -18px -72px; }\n\n.flag.flag-eg {\n  background-position: -162px -36px; }\n\n.flag.flag-gr {\n  background-position: -36px -60px; }\n\n.flag.flag-fi {\n  background-position: -270px -36px; }\n\n.flag.flag-ar {\n  background-position: -162px 0; }\n\n.flag.flag-tz {\n  background-position: -162px -156px; }\n\n.flag.flag-sn {\n  background-position: -54px -144px; }\n\n.flag.flag-gf {\n  background-position: -162px -48px; }\n\n.flag.flag-hk {\n  background-position: -144px -60px; }\n\n.flag.flag-tf {\n  background-position: -216px -144px; }\n\n.flag.flag-so {\n  background-position: -72px -144px; }\n\n.flag.flag-np {\n  background-position: -270px -108px; }\n\n.flag.flag-lu {\n  background-position: -252px -84px; }\n\n.flag.flag-hm {\n  background-position: -162px -60px; }\n\n.flag.flag-ly {\n  background-position: 0 -96px; }\n\n.flag.flag-jp {\n  background-position: -180px -72px; }\n\n.flag.flag-pf {\n  background-position: -108px -120px; }\n\n.flag.flag-lt {\n  background-position: -234px -84px; }\n\n.flag.flag-id {\n  background-position: -252px -60px; }\n\n.flag.flag-tv {\n  background-position: -126px -156px; }\n\n.flag.flag-tg {\n  background-position: -234px -144px; }\n\n.flag.flag-gt {\n  background-position: -72px -60px; }\n\n.flag.flag-cv {\n  background-position: -252px -24px; }\n\n.flag.flag-ps {\n  background-position: -252px -120px; }\n\n.flag.flag-tk {\n  background-position: 0 -156px; }\n\n.flag.flag-pg {\n  background-position: -126px -120px; }\n\n.flag.flag-st {\n  background-position: -108px -144px; }\n\n.flag.flag-yt {\n  background-position: -180px -168px; }\n\n.flag.flag-ad {\n  background-position: 0 0; }\n\n.flag.flag-gs {\n  background-position: -54px -60px; }\n\n.flag.flag-bf {\n  background-position: -54px -12px; }\n\n.flag.flag-mp {\n  background-position: -216px -96px; }\n\n.flag.flag-vn {\n  background-position: -90px -168px; }\n\n.flag.flag-mq {\n  background-position: -234px -96px; }\n\n.flag.flag-om {\n  background-position: -54px -120px; }\n\n.flag.flag-kg {\n  background-position: -216px -72px; }\n\n.flag.flag-ne {\n  background-position: -162px -108px; }\n\n.flag.flag-fm {\n  background-position: -36px -48px; }\n\n.flag.flag-io {\n  background-position: -36px -72px; }\n\n.flag.flag-cl {\n  background-position: -144px -24px; }\n\n.flag.flag-bj {\n  background-position: -108px -12px; }\n\n.flag.flag-gg {\n  background-position: -180px -48px; }\n\n.flag.flag-bo {\n  background-position: -162px -12px; }\n\n.flag.flag-th {\n  background-position: -252px -144px; }\n\n.flag.flag-pl {\n  background-position: -180px -120px; }\n\n.flag.flag-vg {\n  background-position: -54px -168px; }\n\n.flag.flag-la {\n  background-position: -108px -84px; }\n\n.flag.flag-ie {\n  background-position: -270px -60px; }\n\n.flag.flag-ch {\n  background-position: -90px -24px; }\n\n.flag.flag-rs {\n  background-position: -90px -132px; }\n\n.flag.flag-de {\n  background-position: -18px -36px; }\n\n.flag.flag-er {\n  background-position: -198px -36px; }\n\n.flag.flag-ru {\n  background-position: -108px -132px; }\n\n.flag.flag-pt {\n  background-position: -270px -120px; }\n\n.flag.flag-gq {\n  background-position: -18px -60px; }\n\n.flag.flag-sz {\n  background-position: -162px -144px; }\n\n.flag.flag-ph {\n  background-position: -144px -120px; }\n\n.flag.flag-se {\n  background-position: -216px -132px; }\n\n.flag.flag-es {\n  background-position: -216px -36px; }\n\n.flag.flag-ke {\n  background-position: -198px -72px; }\n\n.flag.flag-bg {\n  background-position: -72px -12px; }\n\n.flag.flag-us {\n  background-position: -234px -156px; }\n\n.flag.flag-ma {\n  background-position: -18px -96px; }\n\n.flag.flag-nr {\n  background-position: 0 -120px; }\n\n.flag.flag-cf {\n  background-position: -54px -24px; }\n\n.flag.flag-vi {\n  background-position: -72px -168px; }\n\n.flag.flag-kh {\n  background-position: -234px -72px; }\n\n.flag.flag-ee {\n  background-position: -144px -36px; }\n\n.flag.flag-mw {\n  background-position: -54px -108px; }\n\n.flag.flag-nu {\n  background-position: -18px -120px; }\n\n.flag.flag-ci {\n  background-position: -108px -24px; }\n\n.flag.flag-gh {\n  background-position: -198px -48px; }\n\n.flag.flag-eu {\n  background-position: -252px -36px; }\n\n.flag.flag-be {\n  background-position: -36px -12px; }\n\n.flag.flag-lv {\n  background-position: -270px -84px; }\n\n.flag.flag-bh {\n  background-position: -90px -12px; }\n\n.flag.flag-mo {\n  background-position: -198px -96px; }\n\n.flag.flag-ye {\n  background-position: -162px -168px; }\n\n.flag.flag-il {\n  background-position: 0 -72px; }\n\n.flag.flag-gl {\n  background-position: -234px -48px; }\n\n.flag.flag-kr {\n  background-position: -36px -84px; }\n\n.flag.flag-fo {\n  background-position: -54px -48px; }\n\n.flag.flag-sl {\n  background-position: -18px -144px; }\n\n.flag.flag-sr {\n  background-position: -90px -144px; }\n\n.flag.flag-co {\n  background-position: -198px -24px; }\n\n.flag.flag-bv {\n  background-position: -234px -12px; }\n\n.flag.flag-mz {\n  background-position: -108px -108px; }\n\n.flag.flag-fk {\n  background-position: -18px -48px; }\n\n.flag.flag-ge {\n  background-position: -144px -48px; }\n\n.flag.flag-nf {\n  background-position: -180px -108px; }\n\n.flag.flag-pw {\n  background-position: 0 -132px; }\n\n.flag.flag-rw {\n  background-position: -126px -132px; }\n\n.flag.flag-li {\n  background-position: -162px -84px; }\n\n.flag.flag-kp {\n  background-position: -18px -84px; }\n\n.flag.flag-eh {\n  background-position: -180px -36px; }\n\n.flag.flag-vu {\n  background-position: -108px -168px; }\n\n.flag.flag-mt {\n  background-position: 0 -108px; }\n\n.flag.flag-sm {\n  background-position: -36px -144px; }\n\n.flag.flag-ls {\n  background-position: -216px -84px; }\n\n.flag.flag-gu {\n  background-position: -90px -60px; }\n\n.flag.flag-uz {\n  background-position: -270px -156px; }\n\n.flag.flag-sh {\n  background-position: -252px -132px; }\n\n.flag.flag-gw {\n  background-position: -108px -60px; }\n\n.flag.flag-zw {\n  background-position: -234px -168px; }\n\n.flag.flag-ws {\n  background-position: -144px -168px; }\n\n.flag.flag-mh {\n  background-position: -108px -96px; }\n\n.flag.flag-ni {\n  background-position: -216px -108px; }\n\n.flag.flag-tj {\n  background-position: -270px -144px; }\n\n.flag.flag-uy {\n  background-position: -252px -156px; }\n\n.flag.flag-jo {\n  background-position: -162px -72px; }\n\n.flag.flag-ms {\n  background-position: -270px -96px; }\n\n.flag.flag-qa {\n  background-position: -36px -132px; }\n\n.flag.flag-br {\n  background-position: -180px -12px; }\n\n.flag.flag-ai {\n  background-position: -72px 0; }\n\n.flag.flag-ir {\n  background-position: -72px -72px; }\n\n.flag.flag-pr {\n  background-position: -234px -120px; }\n\n.flag.flag-ki {\n  background-position: -252px -72px; }\n\n.flag.flag-gi {\n  background-position: -216px -48px; }\n\n.flag.flag-by {\n  background-position: -270px -12px; }\n\n.flag.flag-lk {\n  background-position: -180px -84px; }\n\n.flag.flag-gy {\n  background-position: -126px -60px; }\n\n.flag.flag-hu {\n  background-position: -234px -60px; }\n\n.flag.flag-ck {\n  background-position: -126px -24px; }\n\n.flag.flag-sd {\n  background-position: -198px -132px; }\n\n.flag.flag-do {\n  background-position: -90px -36px; }\n\n.flag.flag-bz {\n  background-position: 0 -24px; }\n\n.flag.flag-af {\n  background-position: -36px 0; }\n\n.flag.flag-sg {\n  background-position: -234px -132px; }\n\n.flag.flag-sv {\n  background-position: -126px -144px; }\n\n.flag.flag-tc {\n  background-position: -180px -144px; }\n\n.flag.flag-pk {\n  background-position: -162px -120px; }\n\n.flag.flag-ky {\n  background-position: -72px -84px; }\n\n.flag.flag-zm {\n  background-position: -216px -168px; }\n\n.flag.flag-et {\n  background-position: -234px -36px; }\n\n.flag.flag-km {\n  background-position: -270px -72px; }\n\n.flag.flag-nc {\n  background-position: -144px -108px; }\n\n.flag.flag-ve {\n  background-position: -36px -168px; }\n\n.flag.flag-vc {\n  background-position: -18px -168px; }\n\n.flag.flag-kz {\n  background-position: -90px -84px; }\n\n.flag.flag-gm {\n  background-position: -252px -48px; }\n\n.flag.flag-bd {\n  background-position: -18px -12px; }\n\n.flag.flag-bs {\n  background-position: -198px -12px; }\n\n.flag.flag-mn {\n  background-position: -180px -96px; }\n\n.flag.flag-kw {\n  background-position: -54px -84px; }\n\n.flag.flag-mx {\n  background-position: -72px -108px; }\n\n.flag.flag-at {\n  background-position: -198px 0; }\n\n.flag.flag-lb {\n  background-position: -126px -84px; }\n\n.flag.flag-py {\n  background-position: -18px -132px; }\n\n.flag.flag-hn {\n  background-position: -180px -60px; }\n\n.flag.flag-dm {\n  background-position: -72px -36px; }\n\n.flag.flag-td {\n  background-position: -198px -144px; }\n\n.flag.flag-nz {\n  background-position: -36px -120px; }\n\n.flag.flag-gn {\n  background-position: -270px -48px; }\n\n.flag.flag-gb {\n  background-position: -108px -48px; }\n\n.flag.flag-aw {\n  background-position: -234px 0; }\n\n.flag.flag-cg {\n  background-position: -72px -24px; }\n\n.flag.flag-sc {\n  background-position: -180px -132px; }\n\n.flag.flag-me {\n  background-position: -72px -96px; }\n\n.flag.flag-pm {\n  background-position: -198px -120px; }\n\n.flag.flag-tm {\n  background-position: -36px -156px; }\n\n.flag.flag-pn {\n  background-position: -216px -120px; }\n\n.flag.flag-ae {\n  background-position: -18px 0; }\n\n.flag.flag-ug {\n  background-position: -198px -156px; }\n\n.flag.flag-dz {\n  background-position: -108px -36px; }\n\n.flag.flag-wf {\n  background-position: -126px -168px; }\n\n.flag.flag-hr {\n  background-position: -198px -60px; }\n\n.flag.flag-ua {\n  background-position: -180px -156px; }\n\n@font-face {\n  font-family: 'Actor';\n  font-style: normal;\n  font-weight: 400;\n  src: url(" + __webpack_require__(7) + ");\n  src: url(" + __webpack_require__(8) + ") format(\"woff2\");\n  src: url(" + __webpack_require__(9) + ") format(\"woff\");\n  src: url(" + __webpack_require__(10) + "#Actor) format(\"svg\"); }\n\nbody {\n  background-color: #000000;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  width: 1200px;\n  height: 600px;\n  margin-left: auto;\n  margin-right: auto;\n  margin-top: auto;\n  margin-bottom: auto; }\n\n#app {\n  justify-content: center; }\n\n#canvas {\n  background-color: rgba(20, 20, 20, 0.9);\n  border: solid 1px black;\n  -webkit-border-radius: 3px;\n  -moz-border-radius: 3px;\n  -ms-border-radius: 3px;\n  border-radius: 3px; }\n\n#flags {\n  position: relative; }\n\n#svg {\n  font-family: \"Actor\", Helvetica, Arial, serif;\n  background-color: rgba(20, 20, 20, 0.9);\n  color: rgba(200, 200, 200, 0.5);\n  display: flex;\n  top: auto;\n  bottom: auto;\n  border: solid 1px black;\n  -webkit-border-radius: 3px;\n  -moz-border-radius: 3px;\n  -ms-border-radius: 3px;\n  border-radius: 3px; }\n\n#title {\n  font-size: 1.5em;\n  fill: #d4d4d4; }\n\n.absolute {\n  position: absolute; }\n\n.container {\n  display: flex;\n  align-content: center; }\n\n.tooltip {\n  font-family: \"Actor\", Helvetica, Arial, serif;\n  font-size: 16px;\n  padding: 5px;\n  color: rgba(200, 200, 200, 0.5);\n  background-color: black;\n  border: solid 1px #29000b;\n  -webkit-border-radius: 3px;\n  -moz-border-radius: 3px;\n  -ms-border-radius: 3px;\n  border-radius: 3px; }\n", ""]);
 	
 	// exports
 
